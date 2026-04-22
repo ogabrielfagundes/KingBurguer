@@ -8,6 +8,18 @@ import com.example.kingburguer.R
 
 class PasswordValidator {
 
+    fun validate(password: String): TextString? {
+        if (password.isBlank()) {
+            return ResourceString(R.string.error_password_blank)
+        }
+
+        if (password.length < 8) {
+            return ResourceString(R.string.error_password_invalid)
+        }
+
+        return null
+    }
+
     fun validate(confirmPassword: String, password: String): TextString? {
         if (password.isBlank()) {
             return ResourceString(R.string.error_password_blank)

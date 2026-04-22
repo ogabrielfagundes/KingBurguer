@@ -20,7 +20,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,9 +47,9 @@ import com.example.kingburguer.viewmodels.SignUpViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignUpScreen(
-    viewModel: SignUpViewModel = viewModel(),
+    viewModel: SignUpViewModel = viewModel(factory = SignUpViewModel.factory),
     onNavigationClick: () -> Unit,
-    onNavigateToHome: () -> Unit
+    onNavigateToLogin: () -> Unit
 ) {
     Surface(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -72,11 +71,11 @@ fun SignUpScreen(
                     )
                 )
             }
-        ) {contentPadding ->
+        ) { contentPadding ->
             SignUpContentScreen(
                 viewModel = viewModel,
                 modifier = Modifier.padding(top = contentPadding.calculateTopPadding()),
-                onNavigateToHome = onNavigateToHome
+                onNavigateToLogin = onNavigateToLogin
             )
         }
     }
@@ -86,7 +85,7 @@ fun SignUpScreen(
 private fun SignUpContentScreen(
     modifier: Modifier,
     viewModel: SignUpViewModel,
-    onNavigateToHome: () -> Unit
+    onNavigateToLogin: () -> Unit
 ) {
     Surface(
         modifier = modifier
@@ -106,11 +105,20 @@ private fun SignUpContentScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                LaunchedEffect(key1 = uiState.goToHome) {
-                    if (uiState.goToHome) {
-                        onNavigateToHome()
-                    }
+
+                if (uiState.goToLogin) {
+                    KingAlert(
+                        onDismissRequest = {},
+                        onConfirmation = {
+                            onNavigateToLogin()
+                            viewModel.reset()
+                        },
+                        dialogTitle = stringResource(R.string.app_name),
+                        dialogText = stringResource(R.string.user_created),
+                        icon = Icons.Filled.Info
+                    )
                 }
+
 
 
                 uiState.error?.let {
@@ -161,7 +169,7 @@ private fun SignUpContentScreen(
                     error = viewModel.formState.password.error?.value,
                     obfuscate = passwordHidden,
                     trailingIcon = {
-                        IconButton(onClick = {passwordHidden = !passwordHidden}) {
+                        IconButton(onClick = { passwordHidden = !passwordHidden }) {
                             val image = if (passwordHidden) {
                                 painterResource(R.drawable.visibility_off_24dp)
                             } else {
@@ -192,7 +200,7 @@ private fun SignUpContentScreen(
                     obfuscate = confirmPasswordHidden,
                     error = viewModel.formState.confirmPassword.error?.value,
                     trailingIcon = {
-                        IconButton(onClick = {confirmPasswordHidden = !confirmPasswordHidden}) {
+                        IconButton(onClick = { confirmPasswordHidden = !confirmPasswordHidden }) {
                             val image = if (confirmPasswordHidden) {
                                 painterResource(R.drawable.visibility_off_24dp)
                             } else {
@@ -225,7 +233,7 @@ private fun SignUpContentScreen(
                     keyboardType = KeyboardType.Number,
                     imeAction = ImeAction.Next,
                     error = viewModel.formState.document.error?.value
-                ) {textFieldValue ->
+                ) { textFieldValue ->
                     viewModel.updateDocument(textFieldValue.text)
                 }
 
@@ -240,13 +248,13 @@ private fun SignUpContentScreen(
                     imeAction = ImeAction.Done,
                     error = viewModel.formState.birthday.error?.value
 
-                ) {textFieldValue ->
+                ) { textFieldValue ->
                     viewModel.updateBirthday(textFieldValue.text)
                 }
 
 
                 KingButton(
-                    stringResource(id = R.string.sign_up),
+                    text = stringResource(id = R.string.sign_up),
                     enabled = viewModel.formState.formIsValid,
                     loading = uiState.isLoading
                 ) {
@@ -271,7 +279,7 @@ private fun SignUpContentScreen(
 @Composable
 fun LightSignUpScreenPreview() {
     KingBurguerTheme(dynamicColor = false, darkTheme = false) {
-        SignUpScreen(onNavigationClick = {}, onNavigateToHome = {})
+        SignUpScreen(onNavigationClick = {}, onNavigateToLogin = {})
     }
 }
 
@@ -279,6 +287,6 @@ fun LightSignUpScreenPreview() {
 @Composable
 fun DarkLSignUpScreenPreview() {
     KingBurguerTheme(dynamicColor = false, darkTheme = true) {
-        SignUpScreen(onNavigationClick = {}, onNavigateToHome = {})
+        SignUpScreen(onNavigationClick = {}, onNavigateToLogin = {})
     }
 }

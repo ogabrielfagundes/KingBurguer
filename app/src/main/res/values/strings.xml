@@ -36,4 +36,14 @@
     <string name="error_confirm_password_invalid">Confirmar senha deve ser igual ao campo senha</string>
     <string name="error_document_blank">Campo documento não pode ser vazio</string>
     <string name="error_document_invalid">CPF inválido</string>
+    <string name="user_created">Usuário criado com sucesso!</string>
+    <string name="menu_home">Inicio</string>
+    <string name="menu_coupom">Cupom</string>
+    <string name="menu_profile">Perfil</string>
+    <string name="get_coupon">Resgatar cupom</string>
+    <string name="prop_id">Identificador</string>
+    <string name="prop_name">Nome</string>
+    <string name="prop_email">Email</string>
+    <string name="prop_document">Documento</string>
+    <string name="prop_birthday">Data de nascimento</string>
 </resources>
