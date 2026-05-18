@@ -1,6 +1,8 @@
 package com.example.kingburguer.compose
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -20,12 +22,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -34,7 +35,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -48,11 +49,29 @@ import com.example.kingburguer.compose.home.HomeScreen
 import com.example.kingburguer.compose.product.ProductScreen
 import com.example.kingburguer.compose.profile.ProfileScreen
 import com.example.kingburguer.ui.theme.KingBurguerTheme
+import com.example.kingburguer.viewmodels.MainViewModel
 import dev.tiagoaguiar.kingburguer.compose.coupon.CouponScreen
+
+@Composable
+fun MainScreen(
+    onNavigateToLogin: () -> Unit,
+    viewModel: MainViewModel = viewModel(factory = MainViewModel.factory)
+) {
+    val shouldQuit = viewModel.uiStorage.collectAsState().value
+    if (shouldQuit) {
+        viewModel.reset()
+        onNavigateToLogin()
+    }
+    MainScreen(onLogoutClick = {
+        viewModel.logout()
+    })
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    onLogoutClick: () -> Unit,
+) {
     val navController = rememberNavController()
     var titleTopBarId by remember { mutableIntStateOf(R.string.menu_home) }
 
@@ -70,31 +89,37 @@ fun MainScreen() {
     ) {
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = {
-                        Text(stringResource(titleTopBarId))
-                    },
-                    navigationIcon = {
-                        Icon(
-                            painter = painterResource(R.drawable.kinglogo),
-                            contentDescription = stringResource(R.string.app_name),
-                            tint = Color.Unspecified
-                        )
-                    },
-                    actions = {
-                        IconButton(onClick = {}) {
-                            Icon(imageVector = Icons.Filled.Person, contentDescription = null)
-                        }
-                        IconButton(onClick = {}) {
-                            Icon(imageVector = Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null)
-                        }
-                    },
-                    backgroundColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                )
+                Column(modifier = Modifier.background(MaterialTheme.colorScheme.primary)) {
+                    TopAppBar(
+                        modifier = Modifier.statusBarsPadding(),
+                        navigationIcon = {
+                            Icon(
+                                painter = painterResource(R.drawable.kinglogo),
+                                contentDescription = stringResource(R.string.app_name),
+                                tint = Color.Unspecified
+                            )
+                        },
+                        title = {
+                            Text(stringResource(titleTopBarId))
+                        },
+                        actions = {
+                            IconButton(onClick = {}) {
+                                Icon(imageVector = Icons.Filled.Person, contentDescription = null)
+                            }
+                            IconButton(onClick = { onLogoutClick() }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                                    contentDescription = null
+                                )
+                            }
+                        },
+                        backgroundColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
             },
             bottomBar = {
-                MainBottomNavigation(navController) {titleId ->
+                MainBottomNavigation(navController) { titleId ->
                     titleTopBarId = titleId
                 }
             }
@@ -126,7 +151,6 @@ fun MainBottomNavigation(navController: NavHostController, onNavigationChanged: 
         ),
         NavigationItem(
             title = R.string.menu_profile,
-
             icon = Icons.Default.Person,
             router = Screen.PROFILE
         ),
@@ -177,51 +201,59 @@ fun MainContentScreen(
         startDestination = Screen.HOME.route
     ) {
         composable(Screen.HOME.route) {
-            HomeScreen(modifier = Modifier.padding(
-                top = contentPadding.calculateTopPadding(),
-                bottom = contentPadding.calculateBottomPadding())
+            HomeScreen(
+                modifier = Modifier.padding(
+                    top = contentPadding.calculateTopPadding(),
+                    bottom = contentPadding.calculateBottomPadding()
+                )
             ) { productId ->
                 navController.navigate("${Screen.PRODUCT.route}/$productId")
             }
         }
 
         composable(Screen.COUPON.route) {
-            CouponScreen(modifier = Modifier.padding(
-                top = contentPadding.calculateTopPadding(),
-                bottom = contentPadding.calculateBottomPadding()
-            ))
+            CouponScreen(
+                modifier = Modifier.padding(
+                    top = contentPadding.calculateTopPadding(),
+                    bottom = contentPadding.calculateBottomPadding()
+                )
+            )
         }
 
         composable(Screen.PROFILE.route) {
-            ProfileScreen(modifier = Modifier.padding(
-                top = contentPadding.calculateTopPadding(),
-                bottom = contentPadding.calculateBottomPadding()
-            ))
+            ProfileScreen(
+                modifier = Modifier.padding(
+                    top = contentPadding.calculateTopPadding(),
+                    bottom = contentPadding.calculateBottomPadding()
+                )
+            )
         }
 
         composable(
             route = "${Screen.PRODUCT.route}/{productId}",
             arguments = listOf(
-                navArgument("productId") { type = NavType.IntType}
+                navArgument("productId") { type = NavType.IntType }
             )
         ) {
-            ProductScreen(modifier = Modifier.padding(
-                top = contentPadding.calculateTopPadding(),
-                bottom = contentPadding.calculateBottomPadding()
-            ))
+            ProductScreen(
+                modifier = Modifier.padding(
+                    top = contentPadding.calculateTopPadding(),
+                    bottom = contentPadding.calculateBottomPadding()
+                ),
+                onCouponGenerated = {
+                    navController.popBackStack()
+                }
+            )
         }
     }
 }
-
-
-
 
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun LightMainScreenPreview() {
     KingBurguerTheme(dynamicColor = false, darkTheme = false) {
-        MainScreen()
+        MainScreen(onLogoutClick = {})
     }
 }
 
@@ -229,6 +261,6 @@ fun LightMainScreenPreview() {
 @Composable
 fun DarkMainScreenPreview() {
     KingBurguerTheme(dynamicColor = false, darkTheme = true) {
-        MainScreen()
+        MainScreen(onLogoutClick = {})
     }
 }

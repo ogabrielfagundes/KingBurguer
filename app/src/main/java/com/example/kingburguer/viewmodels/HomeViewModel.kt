@@ -1,8 +1,5 @@
 package com.example.kingburguer.viewmodels
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.createSavedStateHandle
@@ -10,7 +7,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.kingburguer.api.KingBurguerService
-import com.example.kingburguer.compose.product.ProductUiState
+import com.example.kingburguer.compose.home.CategoryUiState
+import com.example.kingburguer.compose.home.HighlightUiState
+import com.example.kingburguer.compose.home.HomeUiState
 import com.example.kingburguer.data.ApiResult
 import com.example.kingburguer.data.KingBurguerLocalStorage
 import com.example.kingburguer.data.KingBurguerRepository
@@ -20,62 +19,61 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class ProductViewModel(
-    savedStateHandle: SavedStateHandle,
+class HomeViewModel(
     private val repository: KingBurguerRepository
 ) : ViewModel() {
 
-    val productId: Int = savedStateHandle["productId"] ?: 0
-    private val _uiState = MutableStateFlow(ProductUiState())
-    val uiState: StateFlow<ProductUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(HomeUiState())
+    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    fun start() {
-        _uiState.update { it.copy(isLoading = true) }
+    fun fetchCategories() {
+        _uiState.update { it.copy(categoryUiState = CategoryUiState(isLoading = true)) }
         viewModelScope.launch {
-            val response = repository.fetchProductById(productId)
+            val response = repository.fetchFeed()
             when(response) {
                 is ApiResult.Error -> {
-                    _uiState.update { it.copy(isLoading = false, error = response.message) }
+                    val state = CategoryUiState(isLoading = false, error = response.message)
+                    _uiState.update { it.copy(categoryUiState = state) }
                 }
                 is ApiResult.Success -> {
-                    _uiState.update { it.copy(isLoading = false, productDetail = response.data) }
+                    val state = CategoryUiState(isLoading = false, categories = response.data.categories)
+                    _uiState.update { it.copy(categoryUiState = state) }
                 }
             }
         }
     }
 
-    fun createCoupon() {
-        _uiState.update { it.copy(isLoading = true) }
+    fun fetchHighlight() {
+        _uiState.update { it.copy(highlightUiState = HighlightUiState(isLoading = true)) }
         viewModelScope.launch {
-            val response = repository.createCoupon(productId)
+            val response = repository.fetchHighlight()
             when(response) {
                 is ApiResult.Error -> {
-                    _uiState.update { it.copy(isLoading = false, error = response.message) }
+                    val state = HighlightUiState(isLoading = false, error = response.message)
+                    _uiState.update { it.copy(highlightUiState = state) }
                 }
                 is ApiResult.Success -> {
-                    _uiState.update { it.copy(isLoading = false, coupon = response.data) }
+                    val state = HighlightUiState(isLoading = false, product = response.data)
+                    _uiState.update { it.copy(highlightUiState = state) }
                 }
             }
         }
     }
 
     init {
-        start()
+        fetchCategories()
+        fetchHighlight()
     }
 
-    fun reset() {
-        _uiState.value = ProductUiState()
-    }
 
     companion object {
         val factory = viewModelFactory {
             initializer {
-                val savedStateHandle = createSavedStateHandle()
                 val application = this[APPLICATION_KEY]!!.applicationContext
                 val service = KingBurguerService.create()
                 val localStorage = KingBurguerLocalStorage(application)
                 val repository = KingBurguerRepository(service, localStorage)
-                ProductViewModel(savedStateHandle, repository)
+                HomeViewModel(repository)
             }
         }
     }

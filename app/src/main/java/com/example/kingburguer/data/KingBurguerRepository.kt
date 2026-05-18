@@ -1,59 +1,116 @@
 package com.example.kingburguer.data
 
 import com.example.kingburguer.api.KingBurguerService
+import com.example.kingburguer.data.UserCredentials
 import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
+import okhttp3.Response
 
 class KingBurguerRepository(
-    private val service: KingBurguerService
+    private val service: KingBurguerService,
+    private val localStorage: KingBurguerLocalStorage
 ) {
 
-    suspend fun postUser(userRequest: UserRequest): UserCreateResponse {
-        val response = service.postUser(userRequest)
+    suspend fun fetchInitialCredentials() = localStorage.fetchInitialUserCredentials()
+    suspend fun postUser(userRequest: UserRequest): ApiResult<UserCreateResponse> {
+        val result = apiCall { service.postUser(userRequest) }
+        return result
+    }
 
+    suspend fun fetchMe(): ApiResult<ProfileResponse> {
+        val userCredentials = localStorage.fetchInitialUserCredentials()
+        val token = "${userCredentials.tokenType} ${userCredentials.accessToken}"
+        return apiCall { service.fetchMe(token) }
+    }
+
+    suspend fun fetchFeed(): ApiResult<FeedResponse> {
+        val userCredentials = localStorage.fetchInitialUserCredentials()
+        val token = "${userCredentials.tokenType} ${userCredentials.accessToken}"
+        return apiCall { service.fetchFeed(token) }
+    }
+
+    suspend fun createCoupon(productId: Int): ApiResult<CouponResponse> {
+        val userCredentials = localStorage.fetchInitialUserCredentials()
+        val token = "${userCredentials.tokenType} ${userCredentials.accessToken}"
+        return apiCall { service.createCoupon(token, productId) }
+    }
+
+    suspend fun fetchProductById(productId: Int): ApiResult<ProductDetailResponse> {
+        val userCredentials = localStorage.fetchInitialUserCredentials()
+        val token = "${userCredentials.tokenType} ${userCredentials.accessToken}"
+        return apiCall { service.fetchProductById(token, productId) }
+    }
+
+    suspend fun fetchHighlight(): ApiResult<HighlightProductResponse> {
+        val userCredentials = localStorage.fetchInitialUserCredentials()
+        val token = "${userCredentials.tokenType} ${userCredentials.accessToken}"
+        return apiCall { service.fetchHighlight(token) }
+    }
+
+    suspend fun login(loginRequest: LoginRequest, keepLogged: Boolean): ApiResult<LoginResponse> {
+        val result = apiCall { service.login(loginRequest) }
+        if (result is ApiResult.Success<LoginResponse>) {
+            if (keepLogged) {
+                updateCredentials(result.data)
+            }
+        }
+        return result
+    }
+
+    private suspend fun <T> apiCall(call: suspend () -> retrofit2.Response<T>): ApiResult<T> {
         try {
-            // error
+            val response = call()
             if (!response.isSuccessful) {
-                val errorData = response.errorBody()?.toString()?.let { json ->
+                val errorData = response.errorBody()?.string()?.let { json ->
                     if (response.code() == 401) {
-                        Gson().fromJson(json, UserCreateResponse.ErrorAuth::class.java)
+                        try {
+                            val errorAuth = Gson().fromJson(json, ErrorAuth::class.java)
+                            ApiResult.Error(errorAuth.detail.message)
+                        }catch (e: JsonSyntaxException) {
+                            val error = Gson().fromJson(json, Error::class.java)
+                            ApiResult.Error(error.detail)
+                        }
                     } else {
-                        Gson().fromJson(json, UserCreateResponse.Error::class.java)
+                        Gson().fromJson(json, ApiResult.Error::class.java)
                     }
                 }
 
-                return errorData ?: UserCreateResponse.Error("internal server error")
-            }
-
-            val data = response.body()?.string()?.let {  json ->
-                Gson().fromJson(json, UserCreateResponse.Success::class.java)
-            }
-            return data?: UserCreateResponse.Error("unexpected response success")
-
-        } catch (e: Exception) {
-            return UserCreateResponse.Error(e.message ?: "unexpected exception")
-        }
-    }
-
-    suspend fun login(loginRequest: LoginRequest): LoginResponse {
-        try {
-            val response = service.login(loginRequest)
-            if(!response.isSuccessful) {
-                val errorData = response.errorBody()?.string()?.let { json ->
-                    Gson().fromJson(json, LoginResponse.ErrorAuth::class.java)
-                }
-
-                return errorData ?: LoginResponse.Error("internal server error")
+                return errorData ?: ApiResult.Error("internal server error")
             }
 
             // sucesso
-            val data = response.body()?.string()?.let { json ->
-                Gson().fromJson(json, LoginResponse.Success::class.java)
-            }
+            val data = response.body()
 
-            return data ?: LoginResponse.Error("unexpected response success")
+            if (data == null) return ApiResult.Error("unexpected response success")
+
+
+            return ApiResult.Success(data)
 
         } catch (e: Exception) {
-            return LoginResponse.Error(e.message ?: "unexpected exception")
+            return ApiResult.Error(e.message ?: "unexpected exception")
         }
     }
-}
+
+    private suspend fun updateCredentials(data: LoginResponse) {
+        val newUserCredentials = UserCredentials(
+                data.accessToken,
+        data.refreshToken,
+        data.expiresSeconds.toLong(),
+        data.tokenType
+        )
+
+        localStorage.updateUserCredential(newUserCredentials)
+    }
+
+    suspend fun refreshToken(request: RefreshTokenRequest): ApiResult<LoginResponse> {
+
+        val userCredentials = localStorage.fetchInitialUserCredentials()
+        val token = "${userCredentials.tokenType} ${userCredentials.accessToken}"
+        val result = apiCall { service.refreshToken(request, token) }
+            if (result is ApiResult.Success<LoginResponse>) {
+                updateCredentials(result.data)
+            }
+            return result
+
+        }
+    }

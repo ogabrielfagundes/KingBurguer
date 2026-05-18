@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -12,6 +13,8 @@ import com.example.kingburguer.api.KingBurguerService
 import com.example.kingburguer.compose.login.LoginUiState
 import com.example.kingburguer.compose.login.FormState
 import com.example.kingburguer.compose.singup.FieldState
+import com.example.kingburguer.data.ApiResult
+import com.example.kingburguer.data.KingBurguerLocalStorage
 import com.example.kingburguer.data.KingBurguerRepository
 import com.example.kingburguer.data.LoginRequest
 import com.example.kingburguer.data.LoginResponse
@@ -103,28 +106,22 @@ class LoginViewModel(
                     username = email.field,
                     password = password.field,
                 )
-                val service = KingBurguerService.create()
-                val repository = KingBurguerRepository(service)
 
-                val result = repository.login(loginRequest)
+                val result = repository.login(loginRequest, rememberMe)
                 Log.i("Teste", "content is $result")
 
                 when (result) {
-                    is LoginResponse.Success -> {
+                    is ApiResult.Success -> {
                         _uiState.update { it.copy(isLoading = false, goToHome = true) }
                     }
 
-                    is LoginResponse.ErrorAuth -> {
+                    is ApiResult.Error -> {
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                error = result.detail.message
+                                error = result.message
                             )
                         }
-                    }
-
-                    is LoginResponse.Error -> {
-                        _uiState.update { it.copy(isLoading = false, error = result.detail) }
                     }
                 }
             }
@@ -134,8 +131,10 @@ class LoginViewModel(
     companion object {
         val factory = viewModelFactory {
             initializer {
+                val application = this[APPLICATION_KEY]!!.applicationContext
                 val service = KingBurguerService.create()
-                val repository = KingBurguerRepository(service)
+                val localStorage = KingBurguerLocalStorage(application)
+                val repository = KingBurguerRepository(service, localStorage)
                 LoginViewModel(repository)
             }
         }

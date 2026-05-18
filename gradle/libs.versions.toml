@@ -12,6 +12,9 @@ composeNavigation = "2.9.7"
 retrofit = "2.11.0"
 okhttpLogging = "4.12.0"
 material = "1.7.5"
+dataStore = "1.1.4"
+coreSplashScreen = "1.0.0"
+coilKt = "3.0.0-alpha10"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -33,6 +36,10 @@ androidx-navigation = { group = "androidx.navigation", name = "navigation-compos
 retrofit2 = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 retrofit2-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
 okhttp3-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttpLogging" }
+datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "dataStore" }
+androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashScreen"}
+coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coilKt"}
+coil-network = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coilKt"}
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

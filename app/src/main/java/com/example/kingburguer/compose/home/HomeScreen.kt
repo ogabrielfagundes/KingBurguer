@@ -1,8 +1,6 @@
 package com.example.kingburguer.compose.home
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,10 +22,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.OutlinedButton
 import androidx.compose.material.Text
 import androidx.compose.material.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -38,89 +38,119 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil3.compose.AsyncImage
 import com.example.kingburguer.R
 import com.example.kingburguer.common.currency
+import com.example.kingburguer.data.CategoryResponse
 import com.example.kingburguer.ui.theme.KingBurguerTheme
 import com.example.kingburguer.ui.theme.Orange600
+import com.example.kingburguer.viewmodels.HomeViewModel
 
-data class Product(
-    val id: Int,
-    val name: String = "",
-    @DrawableRes val picture: Int = R.drawable.example,
-    val price: Double = 19.9
-)
-
-data class Category(
-    val name: String,
-    val products: List<Product>
-)
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier, onProductClicked: (Int) -> Unit) {
+fun HomeScreen(
+    modifier: Modifier,
+    viewModel: HomeViewModel = viewModel(factory = HomeViewModel.factory),
+    onProductClicked: (Int) -> Unit
+) {
+    val state = viewModel.uiState.collectAsState().value
+    HomeScreen(modifier, state, onProductClicked)
+}
 
-    val categories = listOf(
-        Category(
-            name = "Vegetariano",
-            products = listOf(
-                Product(1,"Combo v1"),
-                Product(2,"Combo v2"),
-                Product(3,"Combo v3")
-            )
-        ),
-        Category(
-            name = "Bovino",
-            products = listOf(
-                Product(1,"Combo b1 nomes super grandes que não cabem na tela"),
-                Product(2,"Combo b2"),
-                Product(3,"Combo b3"),
-                Product(4,"Combo b4"),
-                Product(5,"Combo b5"),
-                Product(6,"Combo b6"),
-            )
-        ),
-        Category(
-            name = "Sobremesa",
-            products = listOf(
-                Product(1,"Sobremesa s1"),
-                Product(2,"Sobremesa s2"),
-                Product(3,"Sobremesa s3")
-            )
-        )
-    )
 
-    Column(
-        modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
-    ) {
-        Box(
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            Image(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(230.dp)
-                    .background(Color.Blue),
-                painter = painterResource(R.drawable.highlight),
-                contentDescription = null,
-                contentScale = ContentScale.Crop
-            )
+@Composable
+fun HomeScreen(
+    modifier: Modifier,
+    state: HomeUiState,
+    onProductClicked: (Int) -> Unit
+) {
+    Column(modifier = modifier.fillMaxSize()) {
+        HighlightView(state.highlightUiState, onProductClicked)
+        CategoriesView(state.categoryUiState, onProductClicked)
+    }
+}
 
-            OutlinedButton(
-                onClick = {},
-                modifier = Modifier
-                    .padding(bottom = 12.dp),
-                elevation = ButtonDefaults.elevation(
-                    defaultElevation = 6.dp
-                ),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    backgroundColor = Orange600
+@Composable
+private fun HighlightView(state: HighlightUiState, onProductClicked: (Int) -> Unit) {
+    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
+        when {
+            state.isLoading -> {
+                CircularProgressIndicator()
+            }
+
+            state.error != null -> {
+                Text(state.error, color = MaterialTheme.colorScheme.primary)
+            }
+
+            state.product != null -> {
+                AsyncImage(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(230.dp),
+                    model = state.product.pictureUrl,
+                    placeholder = painterResource(R.drawable.example),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop
                 )
-            ) {
-                Text(
-                    color = Color.White,
-                    text = stringResource(R.string.get_coupon)
-                )
+
+                OutlinedButton(
+                    onClick = { onProductClicked(state.product.productId) },
+                    modifier = Modifier
+                        .padding(bottom = 12.dp),
+                    elevation = ButtonDefaults.elevation(
+                        defaultElevation = 6.dp
+                    ),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        backgroundColor = Orange600
+                    )
+                ) {
+                    Text(
+                        color = Color.White,
+                        text = stringResource(R.string.show_more)
+                    )
+                }
+
             }
         }
+    }
+}
+
+@Composable
+private fun CategoriesView(
+    state: CategoryUiState,
+    onProductClicked: (Int) -> Unit
+) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        when {
+            state.isLoading -> {
+                CircularProgressIndicator()
+            }
+
+            state.error != null -> {
+                Text(state.error, color = MaterialTheme.colorScheme.primary)
+            }
+
+            else -> {
+                HomeScreen(Modifier, state.categories, onProductClicked)
+            }
+        }
+    }
+}
+
+@Composable
+fun HomeScreen(
+    modifier: Modifier = Modifier,
+    categories: List<CategoryResponse>,
+    onProductClicked: (Int) -> Unit
+) {
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
@@ -151,16 +181,18 @@ fun HomeScreen(modifier: Modifier = Modifier, onProductClicked: (Int) -> Unit) {
                                     .widthIn(max = 160.dp)
                                     .padding(start = startPadding, end = endPadding)
                             ) {
-                                Image(
+                                AsyncImage(
+                                    model = product.pictureUrl,
+                                    placeholder = painterResource(R.drawable.example),
                                     modifier = Modifier
                                         .size(140.dp, 180.dp)
                                         .border(
                                             BorderStroke(0.3.dp, Color.Gray),
-                                            shape = RoundedCornerShape(8.dp))
+                                            shape = RoundedCornerShape(8.dp)
+                                        )
                                         .clickable {
-                                        onProductClicked(product.id)
-                                    },
-                                    painter = painterResource(product.picture),
+                                            onProductClicked(product.id)
+                                        },
                                     contentDescription = product.name
                                 )
                                 Text(
@@ -197,16 +229,33 @@ fun HomeScreen(modifier: Modifier = Modifier, onProductClicked: (Int) -> Unit) {
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun LightHomeScreenPreview() {
+fun LightHomeLoadingScreenPreview() {
     KingBurguerTheme(dynamicColor = false, darkTheme = false) {
-        HomeScreen() {}
+        val state = HomeUiState(
+            categoryUiState = CategoryUiState(isLoading = true)
+        )
+        HomeScreen(Modifier, state) {}
     }
 }
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun DarkHomeScreenPreview() {
+fun DarkHomeErrorScreenPreview() {
     KingBurguerTheme(dynamicColor = false, darkTheme = true) {
-        HomeScreen() {}
+        val state = HomeUiState(
+            categoryUiState = CategoryUiState(isLoading = true)
+        )
+        HomeScreen(Modifier, state) {}
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun DarkHomeEmptyScreenPreview() {
+    KingBurguerTheme(dynamicColor = false, darkTheme = true) {
+        val state = HomeUiState(
+            categoryUiState = CategoryUiState(categories = emptyList())
+        )
+        HomeScreen(Modifier, state) {}
     }
 }

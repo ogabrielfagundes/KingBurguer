@@ -40,10 +40,12 @@
     <string name="menu_home">Inicio</string>
     <string name="menu_coupom">Cupom</string>
     <string name="menu_profile">Perfil</string>
-    <string name="get_coupon">Resgatar cupom</string>
+    <string name="show_more">Saiba mais</string>
     <string name="prop_id">Identificador</string>
     <string name="prop_name">Nome</string>
     <string name="prop_email">Email</string>
     <string name="prop_document">Documento</string>
     <string name="prop_birthday">Data de nascimento</string>
+    <string name="coupon_generated">Cupom Gerado: %s. \nVocê também pode consultar seus cupons na aba Cupons</string>
+    <string name="get_coupon">Resgatar cupom</string>
 </resources>

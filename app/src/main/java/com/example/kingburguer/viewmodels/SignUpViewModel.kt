@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -12,6 +13,7 @@ import com.example.kingburguer.api.KingBurguerService
 import com.example.kingburguer.compose.singup.FieldState
 import com.example.kingburguer.compose.singup.FormState
 import com.example.kingburguer.compose.singup.SignUpUiState
+import com.example.kingburguer.data.KingBurguerLocalStorage
 import com.example.kingburguer.data.KingBurguerRepository
 import com.example.kingburguer.data.UserCreateResponse
 import com.example.kingburguer.data.UserRequest
@@ -186,23 +188,21 @@ class SignUpViewModel(private val repository: KingBurguerRepository) : ViewModel
                     document = documentFormatted,
                     birthday = dateFormatted
                 )
-                val service = KingBurguerService.create()
-                val repository = KingBurguerRepository(service)
 
                 val result = repository.postUser(userRequest)
                 Log.i("Teste", "content is $result")
 
-                when(result) {
-                    is UserCreateResponse.Success -> {
-                        _uiState.update { it.copy(isLoading = false, goToLogin = true) }
-                    }
-                    is UserCreateResponse.ErrorAuth -> {
-                        _uiState.update { it.copy(isLoading = false, error = result.detail.message) }
-                    }
-                    is UserCreateResponse.Error -> {
-                        _uiState.update { it.copy(isLoading = false, error = result.detail) }
-                    }
-                }
+//                when(result) {
+//                    is UserCreateResponse.Success -> {
+//                        _uiState.update { it.copy(isLoading = false, goToLogin = true) }
+//                    }
+//                    is UserCreateResponse.ErrorAuth -> {
+//                        _uiState.update { it.copy(isLoading = false, error = result.detail.message) }
+//                    }
+//                    is UserCreateResponse.Error -> {
+//                        _uiState.update { it.copy(isLoading = false, error = result.detail) }
+//                    }
+//                }
             }
 
         }
@@ -212,8 +212,10 @@ class SignUpViewModel(private val repository: KingBurguerRepository) : ViewModel
     companion object {
         val factory = viewModelFactory {
             initializer {
+                val application = this[APPLICATION_KEY]!!.applicationContext
                 val service = KingBurguerService.create()
-                val repository = KingBurguerRepository(service)
+                val localStorage = KingBurguerLocalStorage(application)
+                val repository = KingBurguerRepository(service, localStorage)
                 SignUpViewModel(repository)
             }
         }

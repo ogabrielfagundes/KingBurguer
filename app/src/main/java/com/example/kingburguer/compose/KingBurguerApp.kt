@@ -1,7 +1,9 @@
 package com.example.kingburguer.compose
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -9,18 +11,19 @@ import androidx.navigation.compose.rememberNavController
 import com.example.kingburguer.compose.login.LoginScreen
 import com.example.kingburguer.compose.singup.SignUpScreen
 import com.example.kingburguer.ui.theme.KingBurguerTheme
+import com.example.kingburguer.viewmodels.SplashViewModel
 
 @Composable
-fun KingBurguerApp() {
+fun KingBurguerApp(startDestination: Screen) {
     val navController = rememberNavController()
-    KingBurguerNavHost(navController = navController)
+    KingBurguerNavHost(navController, startDestination)
 }
 
 @Composable
-fun KingBurguerNavHost(navController: NavHostController) {
+fun KingBurguerNavHost(navController: NavHostController, startDestination: Screen) {
     NavHost(
         navController = navController,
-        startDestination = Screen.MAIN.route
+        startDestination = startDestination.route
     ) {
         composable(Screen.LOGIN.route) {
             LoginScreen(onSignUpClick = {
@@ -42,15 +45,11 @@ fun KingBurguerNavHost(navController: NavHostController) {
             )
         }
         composable(Screen.MAIN.route) {
-            MainScreen()
+            MainScreen(onNavigateToLogin = {
+                navController.navigate(Screen.LOGIN.route) {
+                    popUpTo(Screen.MAIN.route) { inclusive = true}
+                }
+            })
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun KingBurguerAppPreview() {
-    KingBurguerTheme {
-        KingBurguerApp()
     }
 }

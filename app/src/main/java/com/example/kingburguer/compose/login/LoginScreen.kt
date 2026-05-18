@@ -51,7 +51,8 @@ fun LoginScreen(
     Surface(modifier = Modifier.fillMaxSize()) {
 
         val scrollState = rememberScrollState()
-        var passwordHidden by remember { mutableStateOf(true) }
+        var passwordHidden by remember { mutableStateOf(
+            true) }
         val uiState by viewModel.uiState.collectAsState()
 
         Column {
