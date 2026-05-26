@@ -53,3 +53,13 @@ Em vez de repetir a estilização nativa, foram criados componentes customizados
 1. Clone este repositório:
    ```bash
    git clone https://github.com/ogabrielfagundes/KingBurguer.git
+
+---
+
+## Imagens das telas
+
+<p align="center">
+  <img width="329" height="700" alt="Captura de tela 2026-05-26 131610" src="https://github.com/user-attachments/assets/13acb8e7-7d22-4ec6-9d8e-7a161ebb9aa6" />
+  <img width="329" height="700" alt="Captura de tela 2026-05-26 131710" src="https://github.com/user-attachments/assets/7d58e423-034e-4de4-89f4-dee9053f6640" />
+  <img width="329" height="700" alt="Captura de tela 2026-05-26 131644" src="https://github.com/user-attachments/assets/9ff47d40-cff0-4d90-bab0-d844d6ec7b97" />
+</p>
